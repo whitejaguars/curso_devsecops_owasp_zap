@@ -25,6 +25,7 @@ except ImportError as e:
     print("      Installing python ZAP")
     print("      pip install python-owasp-zap-v2.4")
 
+
 class bcolors:
     WHITE = '\033[1;37m'
     HEADER = '\033[95m'
@@ -36,22 +37,23 @@ class bcolors:
     PURPLE = '\033[0;35m'
     ENDC = '\033[0m'
     BOLD = "\033[;1m"
-    black='\033[30m'
-    red='\033[31m'
-    green='\033[32m'
-    orange='\033[33m'
-    blue='\033[34m'
-    purple='\033[35m'
-    cyan='\033[36m'
-    lightgrey='\033[37m'
-    darkgrey='\033[90m'
-    lightred='\033[91m'
-    lightgreen='\033[92m'
-    yellow='\033[93m'
-    lightblue='\033[94m'
-    pink='\033[95m'
-    lightcyan='\033[96m'
-    
+    black = '\033[30m'
+    red = '\033[31m'
+    green ='\033[32m'
+    orange = '\033[33m'
+    blue = '\033[34m'
+    purple = '\033[35m'
+    cyan = '\033[36m'
+    lightgrey = '\033[37m'
+    darkgrey = '\033[90m'
+    lightred = '\033[91m'
+    lightgreen = '\033[92m'
+    yellow = '\033[93m'
+    lightblue = '\033[94m'
+    pink = '\033[95m'
+    lightcyan = '\033[96m'
+
+
 def Print(txt,col=None):
     ccolor = bcolors.ENDC
     if col == None or platform.system() == 'Windows':
@@ -68,101 +70,6 @@ def Print(txt,col=None):
     print(ccolor+txt+bcolors.ENDC)
 
 
-# Module Integration
-mod_requirements = [{'name': 'url', 'description': 'URL ZAP will be scanning', 'type': 'url', 'required': True,
-                     'value': None},
-                    {'name': 'args', 'description': 'Send custom arguments for running ZAP (override other parameters)',
-                     'type': 'string', 'required': False, 'value': None},
-                    {'name': 'port', 'description': 'The port used by ZAP for running the local proxy', 'type': 'port',
-                     'required': False, 'value': 9995},
-                    {'name': 'apikey',
-                     'description': 'Setup a custom API key for ZAP, if not provided JaguarScan will generate one for' +
-                                    ' you',
-                     'type': 'string', 'required': False, 'value': None},
-                    {'name': 'path',
-                     'description': 'Custom path for locating the zap.bat or zap.sh script, if not provided the ' +
-                                    'module will use the default based on the current OS',
-                     'type': 'string', 'required': False, 'value': None},
-                    {'name': 'scantype', 'description': 'What scan type do you want ZAP to run: spider,active,full',
-                     'type': ['spider', 'active', 'full'], 'required': True, 'value': 'full'}]
-
-
-def requirements():
-    return mod_requirements
-
-
-def req_validations(reqs):
-    try:
-        mod_config = {}
-        if isinstance(reqs, list):
-            for req in reqs:
-                mod_found = False
-                for mod_req in mod_requirements:
-                    if mod_req["name"] == req["name"]:
-                        mod_found = True
-                        if mod_req["required"] == True and req["value"] == None:
-                            Print("[ X ] Parameter "+req["name"]+" is required","red")
-                            return False
-                        if mod_req["type"] == 'port' or mod_req["type"] == 'integer':
-                            mod_config[req["name"]] = int(req['value'])
-                        else:
-                            mod_config[req["name"]] = req['value']
-                
-                if mod_found == False:
-                    Print("[ X ] Parameter "+req["name"]+" is not defined in module","red")
-                    return False
-            return mod_config
-        else:
-            if mod_requirements["required"] == True and reqs["value"] == None:
-                Print("[ X ] Parameter "+reqs["name"]+" is required","red")
-                return False
-            if mod_requirements["type"] == 'port' or mod_requirements["type"] == 'integer':
-                mod_config[reqs["name"]] = int(reqs['value'])
-            else:
-                mod_config[reqs["name"]] = reqs['value']
-            return mod_config
-    except Exception as e:
-        Print("[ X ] Unhandled Validation Error: "+str(e),"red")
-        return False
-
-
-def run(reqs):
-    try:
-        zap_config = req_validations(reqs)
-        if zap_config == False:
-            return {'description': 'Errors found in the data provided', 'status': 'error'}
-        Print("[ ! ] Parameters validated", "green")
-        # Generate token
-        if zap_config["apikey"] is None:
-            zap_config["apikey"] = gen_token()
-        Print("[ ! ] Loading ZAP", "green")
-        # Testing code
-        zap_results = None
-        if zap_config["port"] == 9995:
-            zap_config["port"] = random.randint(19000, 19999)
-        if load_zap(zap_path=zap_config["path"],
-                    zap_args=zap_config["args"],
-                    api_token=zap_config["apikey"],
-                    port=zap_config["port"]):
-            Print("[ ! ] ZAP successfully loaded!","green")
-            zap_results = zap_scan(zap_config["url"],
-                                   apikey=zap_config["apikey"],
-                                   zap_port=zap_config["port"],
-                                   scan_type=zap_config["scantype"])
-            if zap_results is None:
-                return {'description': "ZAP scan didn't completed correctly, see the event log for details",
-                        'status': 'error'}
-        else:
-            return {'description': "ZAP didn't started correctly, make sure the path is correct", 'status': 'error'}
-        
-        return {'results': zap_results, 'status': True}
-    
-    except Exception as e:
-        Print("[ X ] Error: "+str(e), "red")
-        return {'description': 'Error: '+str(e), 'status': 'error'}
-
-
-# Module Integration
 def load_zap(zap_path=None, zap_args=None, api_token=None, port=None):
     if zap_args is None:
         if api_token is None:
@@ -200,7 +107,7 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
     
     # Create new context
     Print('[ ! ] Creating a new context', "green")
-    contextname = "JaguarScan"
+    contextname = "CICD_Scan"
     contextid = zap.context.new_context(contextname=contextname)
     zap.context.remove_context(contextname='Default Context')
     zap.context.include_in_context(contextname=contextname, regex="{0}{1}".format(target, ".*"))
@@ -211,7 +118,6 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
     time.sleep(2)
 
     Print('[ ! ] Spidering target {}'.format(target), "green")
-    #scanid = zap.spider.scan(target)
     scanid = zap.spider.scan(contextname=contextname, recurse=True, subtreeonly=True)
     # Give the Spider a chance to start
     time.sleep(2)
@@ -230,8 +136,6 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
     
     if scan_type == 'active' or scan_type == 'full':
         Print('[ ! ] Active Scanning target {}'.format(target), 'green')
-        #scanid = zap.ascan.scan(target)
-        #zap.ascan.enable_all_scanners(scanpolicyname='Default Policy')
         scanners = zap.ascan.scanners()
         disabled = []
         for scanner in scanners:
@@ -260,11 +164,9 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
                 break
 
         Print('[ ! ] Scan progress %: {}'.format(zap.ascan.status(scanid)), 'green')
-        
         Print('[ ! ] Active Scan completed', 'green')
     
     # Report the results
-    
     Print('[ ! ] Hosts: {}'.format(', '.join(zap.core.hosts)), 'green')
     Print('[ ! ] Collecting alerts', 'green')
     results = zap.core.alerts()
@@ -273,7 +175,7 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
     
     for each_vuln in results:
         message_data = zap.core.message(each_vuln['messageId'])
-        if each_vuln['url'].startswith( 'https://' ):
+        if each_vuln['url'].startswith('https://'):
             prot = "https"
         else:
             prot = "http"
@@ -283,23 +185,22 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
         tmp = {"issue_type": "vulnerability",
                "type": each_vuln['name'],
                "scan_type": "dynamic",
-               'severity':each_vuln['risk'],
-               'confidence':each_vuln['confidence'],
-               'evidence':'Method:'+each_vuln['method']+' Evidence:'+each_vuln['evidence']+' Parameters:'+each_vuln['param'],
-               'target':target,
-               'details':each_vuln['description'],
-               'url':each_vuln['url'],
-               'port':'',
-               'transport':'tcp',
-               'protocol':prot,
-               'attack':each_vuln['attack'],
-               'cve':'',
-               'cvss':'',
-               'cvss_string':'',
-               'cwe':each_vuln['cweid'],
-               'wasc':each_vuln['wascid'],
-               'remediation':each_vuln['solution'],
-               'screenshot':None,
+               'severity': each_vuln['risk'],
+               'confidence': each_vuln['confidence'],
+               'evidence': 'Method:'+each_vuln['method']+' Evidence:'+each_vuln['evidence']+' Parameters:'+each_vuln['param'],
+               'target': target,
+               'details': each_vuln['description'],
+               'url': each_vuln['url'],
+               'port': '',
+               'transport': 'tcp',
+               'protocol': prot,
+               'attack': each_vuln['attack'],
+               'cve': '',
+               'cvss': '',
+               'cvss_string': '',
+               'cwe': each_vuln['cweid'],
+               'wasc': each_vuln['wascid'],
+               'remediation': each_vuln['solution'],
                'references': each_vuln['reference'],
                'request': message_data['requestHeader']+message_data['requestBody'],
                'response': message_data['responseHeader']+message_data['responseBody'],
@@ -334,22 +235,19 @@ def run_shell_command(cmd):
                 Print('      Select another port in your configuration and try again','red')
                 return False
         sys.stdout.flush()
-
-    #output = process.communicate()[0]
-    #exitCode = process.returncode
     return False
-    #if (exitCode == 0):
-    #    Print("Command completed","blue")
-    #    return output
-        
-def save_obj(obj, name ):
+
+
+def save_obj(obj, name):
     with open(name + '.pkl', 'wb') as f:
         pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
 
-def load_obj(name ):
+
+def load_obj(name):
     with open(name + '.pkl', 'rb') as f:
         return pickle.load(f)
-    
+
+
 def gen_token(length=20, charset="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"):
     random_bytes = os.urandom(length)
     len_charset = len(charset)
