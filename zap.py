@@ -171,7 +171,7 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
     Print('[ ! ] Collecting alerts', 'green')
     results = zap.core.alerts()
     Print('[ ! ] Total results found: '+str(len(results)), 'orange')
-    jaguarscan_results = []
+    scan_results = []
     
     for each_vuln in results:
         message_data = zap.core.message(each_vuln['messageId'])
@@ -206,12 +206,12 @@ def zap_scan(target, apikey=None, zap_port='9999', scan_type='full'):
                'response': message_data['responseHeader']+message_data['responseBody'],
                'tool': 'zap'
                }
-        jaguarscan_results.append(tmp)
+        scan_results.append(tmp)
     
-    Print('[ ! ] Shutting down ZAP','orange')
+    Print('[ ! ] Shutting down ZAP', 'orange')
     zap.core.shutdown()
     time.sleep(5)
-    return jaguarscan_results
+    return scan_results
 
 
 def run_shell_command(cmd):
